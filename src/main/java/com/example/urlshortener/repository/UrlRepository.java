@@ -18,6 +18,13 @@ public interface UrlRepository extends JpaRepository<Url, Long> {
     Optional<Url> findByShortUrl(String shortUrl);
     
     /**
+     * Find a URL entity by its original URL
+     * @param originalUrl the original URL string
+     * @return an Optional containing the URL entity if found
+     */
+    Optional<Url> findByOriginalUrl(String originalUrl);
+    
+    /**
      * Check if a short URL already exists
      * @param shortUrl the shortened URL string
      * @return true if the short URL exists, false otherwise
