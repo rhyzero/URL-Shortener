@@ -1,20 +1,16 @@
 package com.example.urlshortener.controller;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import com.example.urlshortener.model.Url;
+import com.example.urlshortener.service.UrlService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
-import com.example.urlshortener.model.Url;
-import com.example.urlshortener.service.UrlService;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/url")
@@ -29,6 +25,10 @@ public class UrlController {
 
     @PostMapping
     public ResponseEntity<?> createShortUrl(@RequestBody Map<String, String> request) {
+        // Get the current authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        
         String originalUrl = request.get("url");
         if (originalUrl == null || originalUrl.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "URL is required"));
@@ -40,6 +40,7 @@ public class UrlController {
             Map<String, Object> response = new HashMap<>();
             response.put("originalUrl", shortenedUrl.getOriginalUrl());
             response.put("shortUrl", shortenedUrl.getShortUrl());
+            response.put("createdBy", username);
             response.put("expiresAt", shortenedUrl.getExpiresAt());
             
             return ResponseEntity.ok(response);

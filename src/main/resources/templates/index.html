@@ -9,13 +9,37 @@
   <body>
     <header>
       <h1>URL Shortener</h1>
+      <div class="auth-links">
+        <span
+          th:if="${#authentication.principal != 'anonymousUser'}"
+          th:text="${'Welcome, ' + #authentication.principal.username}"
+        ></span>
+        <a
+          th:if="${#authentication.principal != 'anonymousUser'}"
+          href="/logout"
+          >Logout</a
+        >
+        <a th:if="${#authentication.principal == 'anonymousUser'}" href="/login"
+          >Login</a
+        >
+      </div>
     </header>
 
     <main>
       <div class="container">
         <h2>Shorten Your URL</h2>
 
-        <form id="url-form">
+        <div
+          th:if="${#authentication.principal == 'anonymousUser'}"
+          class="auth-message"
+        >
+          <p>Please <a href="/login">login</a> to create shortened URLs.</p>
+        </div>
+
+        <form
+          id="url-form"
+          th:if="${#authentication.principal != 'anonymousUser'}"
+        >
           <div class="input-group">
             <input
               type="url"
@@ -28,7 +52,11 @@
           <div class="error" id="error-message"></div>
         </form>
 
-        <div class="result" id="result-container">
+        <div
+          class="result"
+          id="result-container"
+          th:if="${#authentication.principal != 'anonymousUser'}"
+        >
           <h3>Your Shortened URL</h3>
           <div class="url-info">Original URL:</div>
           <div class="url-display" id="original-url-display"></div>
