@@ -1,23 +1,32 @@
 package com.example.urlshortener.service;
 
-import com.example.urlshortener.exception.UrlException;
-import com.example.urlshortener.model.Url;
-import com.example.urlshortener.repository.UrlRepository;
-import com.example.urlshortener.util.UrlValidator;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.regex.Pattern;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.urlshortener.exception.UrlException;
+import com.example.urlshortener.model.Url;
+import com.example.urlshortener.repository.UrlRepository;
+import com.example.urlshortener.util.UrlValidator;
 
 @Service
 public class UrlServiceImpl implements UrlService {
 
     private final UrlRepository urlRepository;
+    
+    private static final Pattern ALIAS_PATTERN = Pattern.compile("^[a-zA-Z0-9-_]{1,20}$");
 
     @Autowired
     public UrlServiceImpl(UrlRepository urlRepository) {
@@ -53,14 +62,70 @@ public class UrlServiceImpl implements UrlService {
         url.setCreatedAt(LocalDateTime.now());
         // Setting expiration to 1 year from now as default
         url.setExpiresAt(LocalDateTime.now().plusYears(1));
+        url.setCreatedBy(SecurityContextHolder.getContext().getAuthentication().getName());
+        
+        return urlRepository.save(url);
+    }
+    
+    @Override
+    public Url shortenUrl(String originalUrl, String customAlias) {
+        String normalizedUrl = UrlValidator.normalizeUrl(originalUrl);
+        if (normalizedUrl == null) {
+            throw new UrlException.InvalidUrlException("Invalid URL format: " + originalUrl);
+        }
+        
+        if (!ALIAS_PATTERN.matcher(customAlias).matches()) {
+            throw new UrlException.InvalidAliasException(
+                "Custom alias must be 1-20 characters and can only contain letters, numbers, hyphens, and underscores");
+        }
+        
+        if (urlRepository.existsByShortUrl(customAlias)) {
+            throw new UrlException.AliasAlreadyExistsException(
+                "The custom alias '" + customAlias + "' is already in use. Please choose another one.");
+        }
+        
+        Optional<Url> existingUrl = urlRepository.findByOriginalUrl(normalizedUrl);
+        if (existingUrl.isPresent()) {
+            return existingUrl.get();
+        }
+
+        Url url = new Url();
+        url.setOriginalUrl(normalizedUrl);
+        url.setShortUrl(customAlias);
+        url.setCreatedAt(LocalDateTime.now());
+        url.setExpiresAt(LocalDateTime.now().plusYears(1));
+        url.setCreatedBy(SecurityContextHolder.getContext().getAuthentication().getName());
         
         return urlRepository.save(url);
     }
 
     @Override
     public Url getOriginalUrl(String shortUrl) {
-        return urlRepository.findByShortUrl(shortUrl)
+        Url url = urlRepository.findByShortUrl(shortUrl)
                 .orElseThrow(() -> new UrlException.UrlNotFoundException("Short URL not found: " + shortUrl));
+        
+        if (url.getExpiresAt() != null && url.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new UrlException.UrlExpiredException("URL has expired: " + shortUrl);
+        }
+        
+        return url;
+    }
+    
+    @Override
+    @Transactional
+    public void deleteUrl(String shortUrl, String username) {
+        Url url = urlRepository.findByShortUrl(shortUrl)
+                .orElseThrow(() -> new UrlException.UrlNotFoundException("Short URL not found: " + shortUrl));
+        
+        boolean isAdmin = hasRole("ROLE_ADMIN");
+        boolean isCreator = username.equals(url.getCreatedBy());
+        
+        if (!isAdmin && !isCreator) {
+            throw new UrlException.UnauthorizedException(
+                "You are not authorized to delete this URL. Only the creator or an admin can delete it.");
+        }
+        
+        urlRepository.delete(url);
     }
 
     /**
@@ -92,5 +157,16 @@ public class UrlServiceImpl implements UrlService {
     private char generateRandomChar() {
         String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         return chars.charAt((int) (Math.random() * chars.length()));
+    }
+    
+    /**
+     * Checks if the current user has a specific role
+     * @param role the role to check
+     * @return true if the user has the role, false otherwise
+     */
+    private boolean hasRole(String role) {
+        Collection<? extends GrantedAuthority> authorities = 
+                SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+        return authorities.contains(new SimpleGrantedAuthority(role));
     }
 }

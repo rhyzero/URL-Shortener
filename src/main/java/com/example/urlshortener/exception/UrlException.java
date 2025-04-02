@@ -35,4 +35,28 @@ public class UrlException extends RuntimeException {
             super(message, "BLOCKED_URL");
         }
     }
+    
+    public static class AliasAlreadyExistsException extends UrlException {
+        public AliasAlreadyExistsException(String message) {
+            super(message, "ALIAS_ALREADY_EXISTS");
+        }
+    }
+    
+    public static class InvalidAliasException extends UrlException {
+        public InvalidAliasException(String message) {
+            super(message, "INVALID_ALIAS");
+        }
+    }
+    
+    public static class UnauthorizedException extends UrlException {
+        public UnauthorizedException(String message) {
+            super(message, "UNAUTHORIZED");
+        }
+    }
+    
+    public static class UrlExpiredException extends UrlException {
+        public UrlExpiredException(String message) {
+            super(message, "URL_EXPIRED");
+        }
+    }
 }

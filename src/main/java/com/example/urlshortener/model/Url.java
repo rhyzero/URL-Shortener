@@ -7,20 +7,26 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "urls")
+@Table(
+    name = "urls",
+    indexes = {
+        @Index(name = "idx_short_url", columnList = "short_url", unique = true)
+    }
+)
 public class Url {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "original_url", nullable = false, length = 2048)
     private String originalUrl;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "short_url", nullable = false, unique = true, length = 20)
     private String shortUrl;
 
     @Column(name = "created_at")
@@ -28,14 +34,14 @@ public class Url {
 
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
+    
+    @Column(name = "created_by")
+    private String createdBy;
+    
+    @Column(name = "click_count", columnDefinition = "bigint default 0")
+    private Long clickCount = 0L;
 
     public Url() {
-    }
-
-    public Url(String originalUrl, String shortUrl) {
-        this.originalUrl = originalUrl;
-        this.shortUrl = shortUrl;
-        this.createdAt = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -77,6 +83,30 @@ public class Url {
     public void setExpiresAt(LocalDateTime expiresAt) {
         this.expiresAt = expiresAt;
     }
+    
+    public String getCreatedBy() {
+        return createdBy;
+    }
+    
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+    
+    public Long getClickCount() {
+        return clickCount == null ? 0L : clickCount;
+    }
+    
+    public void setClickCount(Long clickCount) {
+        this.clickCount = clickCount;
+    }
+    
+    public void incrementClickCount() {
+        if (this.clickCount == null) {
+            this.clickCount = 1L;
+        } else {
+            this.clickCount++;
+        }
+    }
 
     @Override
     public String toString() {
@@ -86,6 +116,8 @@ public class Url {
                 ", shortUrl='" + shortUrl + '\'' +
                 ", createdAt=" + createdAt +
                 ", expiresAt=" + expiresAt +
+                ", createdBy='" + createdBy + '\'' +
+                ", clickCount=" + clickCount +
                 '}';
     }
 }

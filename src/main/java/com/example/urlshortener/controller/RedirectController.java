@@ -1,8 +1,5 @@
 package com.example.urlshortener.controller;
 
-import com.example.urlshortener.exception.UrlException;
-import com.example.urlshortener.model.Url;
-import com.example.urlshortener.service.UrlService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -10,7 +7,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.servlet.view.RedirectView;
 
-import java.time.LocalDateTime;
+import com.example.urlshortener.exception.UrlException;
+import com.example.urlshortener.model.Url;
+import com.example.urlshortener.service.UrlService;
 
 @Controller
 public class RedirectController {
@@ -27,19 +26,17 @@ public class RedirectController {
         try {
             Url url = urlService.getOriginalUrl(shortUrl);
             
-            if (url.getExpiresAt() != null && url.getExpiresAt().isBefore(LocalDateTime.now())) {
-                RedirectView redirectView = new RedirectView();
-                redirectView.setUrl("/expired");
-                redirectView.setStatusCode(HttpStatus.MOVED_PERMANENTLY);
-                return redirectView;
-            }
-            
             RedirectView redirectView = new RedirectView();
             redirectView.setUrl(url.getOriginalUrl());
             return redirectView;
         } catch (UrlException.UrlNotFoundException e) {
             RedirectView redirectView = new RedirectView();
             redirectView.setUrl("/not-found");
+            redirectView.setStatusCode(HttpStatus.MOVED_PERMANENTLY);
+            return redirectView;
+        } catch (UrlException.UrlExpiredException e) {
+            RedirectView redirectView = new RedirectView();
+            redirectView.setUrl("/expired");
             redirectView.setStatusCode(HttpStatus.MOVED_PERMANENTLY);
             return redirectView;
         }
