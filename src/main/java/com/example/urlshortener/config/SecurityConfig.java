@@ -10,6 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -25,7 +26,7 @@ public class SecurityConfig {
         UserDetails admin = User.builder()
                 .username("admin")
                 .password(passwordEncoder().encode("admin"))
-                .roles("ADMIN")
+                .roles("ADMIN", "USER")
                 .build();
 
         UserDetails user = User.builder()
@@ -42,25 +43,34 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authorize -> authorize
-                // Public endpoints
                 .requestMatchers("/", "/css/**", "/js/**").permitAll()
-                .requestMatchers("/{shortUrl:[a-zA-Z0-9]{1,20}}").permitAll()
-                .requestMatchers("/not-found").permitAll()
+                .requestMatchers("/{shortUrl:[a-zA-Z0-9_-]{1,20}}").permitAll()
+                .requestMatchers("/not-found", "/error", "/expired").permitAll()
+                .requestMatchers("/login", "/register").permitAll()
                 
-                // Protected API endpoints
-                .requestMatchers("/api/url/**").authenticated()
+                .requestMatchers("/api/url/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/stats/**").hasAnyRole("USER", "ADMIN")
                 
-                // Admin-only endpoints
                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                
+                .anyRequest().authenticated()
             )
             .formLogin(form -> form
                 .loginPage("/login")
+                .defaultSuccessUrl("/", true)
+                .failureUrl("/login?error=true")
                 .permitAll()
-                .defaultSuccessUrl("/")
             )
             .logout(logout -> logout
-                .permitAll()
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
                 .logoutSuccessUrl("/")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .deleteCookies("JSESSIONID")
+                .permitAll()
+            )
+            .exceptionHandling(exception -> exception
+                .accessDeniedPage("/access-denied")
             );
         
         return http.build();

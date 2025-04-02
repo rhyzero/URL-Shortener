@@ -50,4 +50,22 @@ public interface UrlService {
      * @throws UrlException.UnauthorizedException if the user is not authorized to delete this URL
      */
     void deleteUrl(String shortUrl, String username);
+    
+    /**
+     * Increments the click count for a given short URL
+     * 
+     * @param shortUrl the short URL to increment click count for
+     * @return the updated URL entity with incremented click count
+     * @throws UrlException.UrlNotFoundException if the short URL is not found
+     */
+    Url incrementClickCount(String shortUrl);
+    
+    /**
+     * Gets the click count for a given short URL
+     * 
+     * @param shortUrl the short URL to get click count for
+     * @return the click count
+     * @throws UrlException.UrlNotFoundException if the short URL is not found
+     */
+    long getClickCount(String shortUrl);
 }

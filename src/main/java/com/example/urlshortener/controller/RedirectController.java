@@ -26,6 +26,12 @@ public class RedirectController {
         try {
             Url url = urlService.getOriginalUrl(shortUrl);
             
+            try {
+                urlService.incrementClickCount(shortUrl);
+            } catch (Exception e) {
+                System.err.println("Error incrementing click count: " + e.getMessage());
+            }
+            
             RedirectView redirectView = new RedirectView();
             redirectView.setUrl(url.getOriginalUrl());
             return redirectView;

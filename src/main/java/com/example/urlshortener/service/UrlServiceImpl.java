@@ -63,6 +63,7 @@ public class UrlServiceImpl implements UrlService {
         // Setting expiration to 1 year from now as default
         url.setExpiresAt(LocalDateTime.now().plusYears(1));
         url.setCreatedBy(SecurityContextHolder.getContext().getAuthentication().getName());
+        url.setClickCount(0L);
         
         return urlRepository.save(url);
     }
@@ -95,6 +96,7 @@ public class UrlServiceImpl implements UrlService {
         url.setCreatedAt(LocalDateTime.now());
         url.setExpiresAt(LocalDateTime.now().plusYears(1));
         url.setCreatedBy(SecurityContextHolder.getContext().getAuthentication().getName());
+        url.setClickCount(0L);
         
         return urlRepository.save(url);
     }
@@ -104,6 +106,7 @@ public class UrlServiceImpl implements UrlService {
         Url url = urlRepository.findByShortUrl(shortUrl)
                 .orElseThrow(() -> new UrlException.UrlNotFoundException("Short URL not found: " + shortUrl));
         
+        // Check if URL has expired
         if (url.getExpiresAt() != null && url.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new UrlException.UrlExpiredException("URL has expired: " + shortUrl);
         }
@@ -126,6 +129,24 @@ public class UrlServiceImpl implements UrlService {
         }
         
         urlRepository.delete(url);
+    }
+    
+    @Override
+    @Transactional
+    public Url incrementClickCount(String shortUrl) {
+        Url url = urlRepository.findByShortUrl(shortUrl)
+                .orElseThrow(() -> new UrlException.UrlNotFoundException("Short URL not found: " + shortUrl));
+        
+        url.incrementClickCount();
+        return urlRepository.save(url);
+    }
+    
+    @Override
+    public long getClickCount(String shortUrl) {
+        Url url = urlRepository.findByShortUrl(shortUrl)
+                .orElseThrow(() -> new UrlException.UrlNotFoundException("Short URL not found: " + shortUrl));
+        
+        return url.getClickCount();
     }
 
     /**

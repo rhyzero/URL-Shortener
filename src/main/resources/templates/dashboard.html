@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html
+  lang="en"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <title>Admin Dashboard - URL Shortener</title>
+    <style>
+      .dashboard-container {
+        max-width: 1200px;
+      }
+
+      .table-container {
+        overflow-x: auto;
+        margin-top: 2rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      th {
+        background-color: var(--light-gray);
+        font-weight: 600;
+      }
+
+      tr:hover {
+        background-color: var(--light-gray);
+      }
+
+      .empty-message {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
+
+      .click-count {
+        font-weight: bold;
+        color: var(--primary-color);
+      }
+
+      .summary-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .stat-card {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .stat-card h3 {
+        margin-top: 0;
+        color: var(--text-color);
+        font-size: 1rem;
+      }
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--primary-color);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>URL Shortener</h1>
+      <div class="auth-links">
+        <span>Admin Dashboard</span>
+        <a href="/">Home</a>
+        <a href="/logout">Logout</a>
+      </div>
+    </header>
+
+    <main>
+      <div class="container dashboard-container">
+        <h2>Admin Dashboard</h2>
+        <div class="summary-stats">
+          <div class="stat-card">
+            <h3>Total URLs</h3>
+            <div class="stat-value" th:text="${urls.size()}">0</div>
+          </div>
+
+          <div class="stat-card">
+            <h3>Total Clicks</h3>
+            <div
+              class="stat-value"
+              th:text="${#aggregates.sum(urls.![clickCount])}"
+            >
+              0
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <h3>Active URLs</h3>
+            <div
+              class="stat-value"
+              th:text="${#lists.size(urls.?[expiresAt > #temporals.createNow()])}"
+            >
+              0
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <h3>Expired URLs</h3>
+            <div
+              class="stat-value"
+              th:text="${#lists.size(urls.?[expiresAt <= #temporals.createNow()])}"
+            >
+              0
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table th:if="${not #lists.isEmpty(urls)}">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Short URL</th>
+                <th>Original URL</th>
+                <th>Created</th>
+                <th>Expires</th>
+                <th>Created By</th>
+                <th>Clicks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="url : ${urls}">
+                <td th:text="${url.id}">1</td>
+                <td>
+                  <a
+                    th:href="@{'/' + ${url.shortUrl}}"
+                    th:text="${url.shortUrl}"
+                    target="_blank"
+                    >abc123</a
+                  >
+                </td>
+                <td>
+                  <a
+                    th:href="${url.originalUrl}"
+                    th:text="${url.originalUrl}"
+                    target="_blank"
+                    >https://example.com</a
+                  >
+                </td>
+                <td
+                  th:text="${#temporals.format(url.createdAt, 'yyyy-MM-dd HH:mm')}"
+                >
+                  2025-03-31 12:00
+                </td>
+                <td
+                  th:text="${#temporals.format(url.expiresAt, 'yyyy-MM-dd HH:mm')}"
+                >
+                  2026-03-31 12:00
+                </td>
+                <td th:text="${url.createdBy}">user</td>
+                <td class="click-count" th:text="${url.clickCount}">0</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="empty-message" th:if="${#lists.isEmpty(urls)}">
+            <p>No URLs have been created yet.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <p>&copy; 2025 URL Shortener | A Spring Boot Application</p>
+    </footer>
+  </body>
+</html>
