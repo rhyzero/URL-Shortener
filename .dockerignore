@@ -1,0 +1,15 @@
+.git
+.gitignore
+README.md
+CHANGELOG.md
+docker-compose.yml
+.env
+.DS_Store
+.idea/
+*.iml
+*.ipr
+*.iws
+target/*
+!target/url-shortener-0.0.1-SNAPSHOT.jar
+node_modules/
+npm-debug.log
